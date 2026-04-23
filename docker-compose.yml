@@ -1,0 +1,29 @@
+services:
+  db:
+    image: mysql:8
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: atliq_tshirts
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db_creation_atliq_t_shirts.sql:/docker-entrypoint-initdb.d/db_creation_atliq_t_shirts.sql
+
+  app:
+    build: .
+    container_name: q_and_a_tool_retail_domain
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    ports:
+      - "8501:8501"
+
+volumes:
+  mysql_data:
