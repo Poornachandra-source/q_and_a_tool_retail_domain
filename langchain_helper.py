@@ -183,16 +183,21 @@ def get_few_shot_db_chain(db):
 def database_creation():
     #database parameters
     #db_user = "root" for local run 
-    db_user = "user" #for docker run 
+    # db_user = "user" #for docker run 
+    db_user = os.getenv("DB_USER") #for railway cloud 
     #db_password = "12345678" for local run 
-    db_password = "password"
+    # db_password = "password" #for docker run 
+    db_password = os.getenv("DB_PASSWORD") #for railway cloud 
     #db_host = "localhost"  for local run 
-    db_host = "db" # for docker run 
-    db_name = "atliq_tshirts"
+    # db_host = "db" # for docker run 
+    db_host = os.getenv("DB_HOST") # for railway cloud
+    db_name = "atliq_tshirts" #for docker run 
+    port=int(os.getenv("DB_PORT", 3306))
 
     #creating database object to connect to sql data base 
     #db = SQLDatabase.from_uri(f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}",sample_rows_in_table_info = 3) for local run 
-    db = SQLDatabase.from_uri(f"mysql+pymysql://{db_user}:{db_password}@{db_host}:3306/{db_name}",sample_rows_in_table_info = 3)
+    # db = SQLDatabase.from_uri(f"mysql+pymysql://{db_user}:{db_password}@{db_host}:3306/{db_name}",sample_rows_in_table_info = 3) #for docker run 
+    db = SQLDatabase.from_uri(f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{port}/{db_name}",sample_rows_in_table_info = 3) # for railway cloud 
 
     return db
 
