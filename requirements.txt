@@ -1,3 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch
+sentence-transformers
+
 pandas
 numpy
 openpyxl
@@ -8,7 +13,6 @@ huggingface_hub
 langchain-huggingface
 langchain-classic
 streamlit
-sentence-transformers
 langchain_experimental
 mysql-connector-python
 pymysql
