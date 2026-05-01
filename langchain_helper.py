@@ -16,6 +16,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.prompts import FewShotPromptTemplate
 
 print("STARTING APP PID:", os.getpid())
+print("PORT VALUE:", os.environ.get("PORT"))
 
 login(token=os.environ["HF_TOKEN"])
 
