@@ -1,4 +1,6 @@
 from langchain_huggingface import HuggingFacePipeline
+import logging
+from huggingface_hub import login
 from transformers import pipeline
 from langchain_community.utilities import SQLDatabase
 from langchain_core.runnables import RunnableLambda
@@ -12,6 +14,13 @@ from sentence_transformers import SentenceTransformer    #for converting text to
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.prompts import FewShotPromptTemplate
+
+print("STARTING APP PID:", os.getpid())
+
+login(token=os.environ["HF_TOKEN"])
+
+logging.getLogger("uvicorn").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
 
 sys.stdout.reconfigure(encoding='utf-8')
 
