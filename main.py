@@ -1,5 +1,4 @@
-from langchain_helper import database_creation
-from langchain_helper import get_few_shot_db_chain
+from langchain_helper import database_creation, few_shot_db,get_few_shot_db_chain
 import sys
 import streamlit as st
 import pdb
@@ -35,7 +34,8 @@ db = database_creation()
 st.title("AtliQ T shirts: Q&A Database 👕")
 question = st.text_input("Question: ")
 if question:
-    sql_generator = get_few_shot_db_chain(db)
+    llm,selector = few_shot_db(db)
+    sql_generator = get_few_shot_db_chain(llm,selector)
     # query = ''
 
     query = sql_generator.invoke({"input":question,
@@ -43,11 +43,10 @@ if question:
                                 "top_k": "2"},
                                 config={"callbacks": [handler]})
     clean_sql = query.split("```Query")[-1].split("```")[0].strip()
-    try:
-        ans = db.run(clean_sql)
+    # try:
+    ans = db.run(clean_sql)
         # pdb.set_trace()
-    except:
-        pdb.set_trace()
+    # except:
+    #     pdb.set_trace()
     st.header("Answer: ")
-    st.write(ans.strip("[,()]").strip("Decimal(").strip("'"))
-    
+    st.write(ans.strip("[,()]").strip("Decimal(").strip("'"))    

@@ -15,14 +15,14 @@ from langchain_core.prompts import FewShotPromptTemplate
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-def get_few_shot_db_chain(db):
-
-    #llm initialization 
+@st.cache_resource
+def few_shot_db(_db):
+#llm initialization 
     model_name = "Qwen/Qwen3-4B-Instruct-2507"
     task = "text-generation"
     hf_pipeline = pipeline(task, model=model_name, max_new_tokens = 500)
     llm = HuggingFacePipeline(pipeline=hf_pipeline)
-    
+
     # few shot learning 
     few_shots = [
         {
@@ -34,7 +34,7 @@ def get_few_shot_db_chain(db):
                         group by t_shirt_id) \
                         a left join discounts d on a.t_shirt_id = d.t_shirt_id;",
             'SQLResult': "Result of the SQL Query",
-            'Answer': db.run("SELECT SUM(a.total_amount *((100-COALESCE(d.pct_discount,0))/100)) AS revenue \
+            'Answer': _db.run("SELECT SUM(a.total_amount *((100-COALESCE(d.pct_discount,0))/100)) AS revenue \
                             FROM ( \
                             SELECT SUM(price*stock_quantity) as total_amount,t_shirt_id from t_shirts \
                             where brand  = 'Levi' \
@@ -47,7 +47,7 @@ def get_few_shot_db_chain(db):
                         FROM t_shirts \
                         WHERE brand = 'Nike' AND size = 'XS' AND color = 'White';",
             'SQLResult': "Result of the SQL Query",
-            'Answer': db.run("SELECT SUM(stock_quantity) FROM t_shirts \
+            'Answer': _db.run("SELECT SUM(stock_quantity) FROM t_shirts \
             WHERE brand = 'Nike' AND size = 'XS' AND color = 'White';").strip("[,()]").strip('Decimal').strip("'[,()]'")
         },
         {
@@ -56,7 +56,7 @@ def get_few_shot_db_chain(db):
                         FROM t_shirts \
                         WHERE size = 'S';",
             'SQLResult': "Result of the SQL Query",
-            'Answer': db.run("SELECT SUM(price*stock_quantity) as total_price \
+            'Answer': _db.run("SELECT SUM(price*stock_quantity) as total_price \
                             FROM t_shirts  \
                             WHERE size = 'S';").strip("[,()]").strip('Decimal').strip("'[,()]'")
         },
@@ -66,7 +66,7 @@ def get_few_shot_db_chain(db):
                         FROM t_shirts \
                         WHERE brand = 'Levi';",
             'SQLResult': "Result of the SQL Query",
-            'Answer': db.run("SELECT SUM(price*stock_quantity) as revenue \
+            'Answer': _db.run("SELECT SUM(price*stock_quantity) as revenue \
                             FROM t_shirts \
                             WHERE brand = 'Levi';").strip("[,()]").strip('Decimal').strip("'[,()]'")
         },
@@ -76,7 +76,7 @@ def get_few_shot_db_chain(db):
                         FROM t_shirts \
                         WHERE brand = 'Levi' AND color = 'White';",
             'SQLResult': "Result of the SQL Query",
-            'Answer': db.run("SELECT SUM(stock_quantity) \
+            'Answer': _db.run("SELECT SUM(stock_quantity) \
                             FROM t_shirts \
                             WHERE brand = 'Levi' AND color = 'White';").strip("[,()]").strip('Decimal').strip("'[,()]'")
         },
@@ -89,7 +89,7 @@ def get_few_shot_db_chain(db):
                         group by t_shirt_id) \
                         a left join discounts d on a.t_shirt_id = d.t_shirt_id;",
             'SQLResult': "Result of the SQL Query",
-            'Answer': db.run("SELECT SUM(a.total_amount *((100-COALESCE(d.pct_discount,0))/100)) AS sales_amount \
+            'Answer': _db.run("SELECT SUM(a.total_amount *((100-COALESCE(d.pct_discount,0))/100)) AS sales_amount \
                             FROM ( \
                             SELECT SUM(price*stock_quantity) as total_amount,t_shirt_id from t_shirts \
                             where brand  = 'Nike' and size = 'L' \
@@ -99,18 +99,25 @@ def get_few_shot_db_chain(db):
     ]
 
     #Embedding of few shots data 
+    # embeddings = HuggingFaceEmbeddings(
+    #         model_name= "sentence-transformers/all-mpnet-base-v2",
+    #         model_kwargs={"device": "cpu"},                        # e.g., "cuda" if you have GPU
+    #     )   # for local 
     embeddings = HuggingFaceEmbeddings(
-            model_name= "sentence-transformers/all-mpnet-base-v2",
+            model_name= "sentence-transformers/all-MiniLM-L6-v2",
             model_kwargs={"device": "cpu"},                        # e.g., "cuda" if you have GPU
-        )
+        ) # for cloud 
 
     #Storing of vectors 
     to_vectorize = [" ".join(example.values()) for example in few_shots]
     vectorstore = Chroma.from_texts(to_vectorize,embedding=embeddings,metadatas=few_shots)
 
-    #Semantic search of user question 
+        #Semantic search of user question 
     selector = SemanticSimilarityExampleSelector(vectorstore=vectorstore) # here k refers to no of similar items  ,k=2
+    return llm,selector
 
+def get_few_shot_db_chain(llm,selector):
+      
     #SQL_Prompt
     SQL_Prompt_prefix = r"""
                     You are a MySQL Expert.
@@ -180,6 +187,7 @@ def get_few_shot_db_chain(db):
 # pdb.set_trace()
 # print(clean_sql)
 # print(db.table_info)
+@st.cache_resource
 def database_creation():
     #database parameters
     #db_user = "root" for local run 
